@@ -29,17 +29,22 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Create a non-root user
+RUN useradd --create-home --shell /bin/bash app
+
 # Copy the application
 COPY azure_cli_mcp/ ./azure_cli_mcp/
 COPY pyproject.toml .
 
-# Create a non-root user
-RUN useradd --create-home --shell /bin/bash app
+# Change ownership of /app to the app user AFTER copying files
+RUN chown -R app:app /app
+
 USER app
 
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV LOG_LEVEL=INFO
+ENV LOG_FILE=/tmp/azure_cli_mcp.log
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
