@@ -1,0 +1,136 @@
+name: Build and Release Python Package
+
+on:
+  release:
+    types: [ published ]
+
+jobs:
+  build-python-package:
+    name: 'Build Python Package'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          
+      - name: Install build dependencies
+        working-directory: ./azure-cli-mcp-python
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+          pip install -r requirements.txt
+          
+      - name: Run tests before build
+        working-directory: ./azure-cli-mcp-python
+        run: |
+          pytest tests/ -v
+          
+      - name: Build wheel and source distribution
+        working-directory: ./azure-cli-mcp-python
+        run: |
+          python -m build
+          
+      - name: Check package
+        working-directory: ./azure-cli-mcp-python
+        run: |
+          python -m twine check dist/*
+          
+      - name: Temporarily save package
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package
+          path: |
+            azure-cli-mcp-python/dist/*.whl
+            azure-cli-mcp-python/dist/*.tar.gz
+          retention-days: 1
+
+  publish-package:
+    name: 'Publish Package to GitHub Release'
+    needs: [ build-python-package ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package
+          path: ./dist/
+          
+      - name: Upload packages to GitHub release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./dist/*
+          file_glob: true
+          tag: ${{ github.ref }}
+          overwrite: true
+
+  publish-docker-image:
+    name: 'Build and Publish Docker Image'
+    runs-on: ubuntu-22.04
+    permissions:
+      packages: write
+      contents: read
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}-python
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+            
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./azure-cli-mcp-python
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  test-docker-deployment:
+    name: 'Test Docker Deployment'
+    needs: [ publish-docker-image ]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Extract tag name
+        id: tag
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+      - name: Test Docker image import
+        run: |
+          docker run --rm ghcr.io/${{ github.repository }}-python:${{ steps.tag.outputs.tag }} python -c "import azure_cli_mcp; print('✅ Package import successful')"
+          
+      - name: Test Azure CLI availability
+        run: |
+          docker run --rm ghcr.io/${{ github.repository }}-python:${{ steps.tag.outputs.tag }} az --version
