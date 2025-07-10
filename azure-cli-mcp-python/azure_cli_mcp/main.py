@@ -58,7 +58,9 @@ async def handle_azure_cli_tool(request: CallToolRequest) -> CallToolResult:
     if not azure_cli_service:
         return CallToolResult(
             content=[
-                {"type": "text", "text": "Error: Azure CLI service not initialized"}
+                TextContent(
+                    type="text", text="Error: Azure CLI service not initialized"
+                )
             ],
             isError=True,
         )
@@ -67,7 +69,9 @@ async def handle_azure_cli_tool(request: CallToolRequest) -> CallToolResult:
         # Extract command from arguments
         if not request.params or not request.params.arguments:
             return CallToolResult(
-                content=[{"type": "text", "text": "Error: Missing command argument"}],
+                content=[
+                    TextContent(type="text", text="Error: Missing command argument")
+                ],
                 isError=True,
             )
 
@@ -75,7 +79,9 @@ async def handle_azure_cli_tool(request: CallToolRequest) -> CallToolResult:
         if not isinstance(arguments, dict) or "command" not in arguments:
             return CallToolResult(
                 content=[
-                    {"type": "text", "text": "Error: Missing 'command' in arguments"}
+                    TextContent(
+                        type="text", text="Error: Missing 'command' in arguments"
+                    )
                 ],
                 isError=True,
             )
@@ -83,7 +89,9 @@ async def handle_azure_cli_tool(request: CallToolRequest) -> CallToolResult:
         command = arguments["command"]
         if not isinstance(command, str):
             return CallToolResult(
-                content=[{"type": "text", "text": "Error: Command must be a string"}],
+                content=[
+                    TextContent(type="text", text="Error: Command must be a string")
+                ],
                 isError=True,
             )
 
@@ -97,7 +105,7 @@ async def handle_azure_cli_tool(request: CallToolRequest) -> CallToolResult:
     except Exception as e:
         logger.error(f"Error executing Azure CLI command: {e}")
         return CallToolResult(
-            content=[{"type": "text", "text": f"Error: {str(e)}"}], isError=True
+            content=[TextContent(type="text", text=f"Error: {str(e)}")], isError=True
         )
 
 
@@ -111,17 +119,17 @@ async def main() -> None:
         azure_cli_service = AzureCliService(settings)
 
         # Create MCP server
-        server = Server("azure-cli-mcp")
+        server: Server = Server("azure-cli-mcp")
 
         # Register tools
         azure_cli_tool = create_azure_cli_tool()
 
-        @server.list_tools()
+        @server.list_tools()  # type: ignore
         async def handle_list_tools() -> List[Tool]:
             """List available tools."""
             return [azure_cli_tool]
 
-        @server.call_tool()
+        @server.call_tool()  # type: ignore
         async def handle_call_tool(
             name: str, arguments: Dict[str, Any]
         ) -> CallToolResult:
@@ -135,10 +143,10 @@ async def main() -> None:
                         self.arguments = arguments
 
                 fake_request = FakeRequest(name, arguments)
-                return await handle_azure_cli_tool(fake_request)
+                return await handle_azure_cli_tool(fake_request)  # type: ignore
             else:
                 return CallToolResult(
-                    content=[{"type": "text", "text": f"Unknown tool: {name}"}],
+                    content=[TextContent(type="text", text=f"Unknown tool: {name}")],
                     isError=True,
                 )
 

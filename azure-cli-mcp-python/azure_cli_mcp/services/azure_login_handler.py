@@ -9,7 +9,7 @@ from typing import List, Optional
 class AzureLoginHandler:
     """Handler for Azure CLI login with device code authentication."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Azure login handler."""
         self.logger = logging.getLogger(__name__)
         self.current_process: Optional[asyncio.subprocess.Process] = None
@@ -67,8 +67,12 @@ class AzureLoginHandler:
             self.logger.info("Handling 'az login' process in the background")
 
             # Read stdout and stderr
-            stdout_lines = await self._read_lines(process.stdout)
-            stderr_lines = await self._read_lines(process.stderr)
+            stdout_lines = (
+                await self._read_lines(process.stdout) if process.stdout else []
+            )
+            stderr_lines = (
+                await self._read_lines(process.stderr) if process.stderr else []
+            )
 
             # Wait for process completion
             return_code = await process.wait()

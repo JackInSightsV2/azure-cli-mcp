@@ -39,7 +39,7 @@ def create_app(settings: Settings, azure_cli_service: AzureCliService) -> FastAP
     templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
     @app.get("/", response_class=HTMLResponse)
-    async def root():
+    async def root() -> HTMLResponse:
         """Serve the main page."""
         try:
             # Try to serve the static index.html file

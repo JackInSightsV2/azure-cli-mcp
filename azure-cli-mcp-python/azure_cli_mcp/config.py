@@ -66,8 +66,7 @@ class Settings(BaseSettings):
         return v.upper()
 
     @computed_field
-    @property
-    def azure_credentials(self) -> Optional[Dict[str, str]]:
+    def azure_credentials(self) -> Optional[Dict[str, Optional[str]]]:
         """Get Azure credentials as a dictionary."""
         if self.has_azure_credentials():
             return {
