@@ -4,7 +4,6 @@ version = "0.1.3"
 description = "Azure CLI MCP Server in Python"
 authors = ["Converted from Java"]
 license = "MIT"
-readme = "README.md"
 homepage = "https://github.com/JackInSightsV2/azure-cli-mcp"
 repository = "https://github.com/JackInSightsV2/azure-cli-mcp"
 packages = [{include = "azure_cli_mcp"}]
