@@ -209,9 +209,19 @@ class TestSecurity:
             # Should handle environment variables safely
             assert isinstance(result, str)
             
-            # Verify no actual access to sensitive files
-            assert not os.path.exists(os.path.expanduser("~/.ssh/authorized_keys"))
-            assert not os.path.exists("/etc/shadow")
+            # Commands with environment variable injection should be rejected
+            # as they contain invalid syntax for Azure CLI
+            assert "Invalid command" in result or "Error" in result
+            
+            # Verify no files were created in the user's home directory
+            # (Check for files that might have been created by malicious commands)
+            test_files = [
+                os.path.expanduser("~/.ssh/authorized_keys_backup"),
+                os.path.expanduser("~/malicious-file"),
+                "/tmp/test-injection-file"
+            ]
+            for test_file in test_files:
+                assert not os.path.exists(test_file)
 
     @pytest.mark.asyncio
     async def test_unicode_security(self):
