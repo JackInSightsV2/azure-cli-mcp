@@ -1,1 +1,1 @@
-"""Azure CLI MCP Web Package.""" 
+"""Azure CLI MCP Web Package."""

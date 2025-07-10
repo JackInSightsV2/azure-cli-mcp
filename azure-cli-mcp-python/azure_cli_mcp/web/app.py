@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
@@ -25,19 +25,19 @@ TEMPLATES_DIR.mkdir(exist_ok=True)
 
 def create_app(settings: Settings, azure_cli_service: AzureCliService) -> FastAPI:
     """Create and configure the FastAPI application."""
-    
+
     app = FastAPI(
         title="Azure CLI MCP Server",
         description="A Python-based Azure CLI MCP server with web interface",
         version="1.0.0",
     )
-    
+
     # Mount static files
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-    
+
     # Templates (if we need them later)
     templates = Jinja2Templates(directory=TEMPLATES_DIR)
-    
+
     @app.get("/", response_class=HTMLResponse)
     async def root():
         """Serve the main page."""
@@ -48,7 +48,8 @@ def create_app(settings: Settings, azure_cli_service: AzureCliService) -> FastAP
                 return HTMLResponse(content=index_file.read_text(), status_code=200)
             else:
                 # Fallback HTML if static file doesn't exist
-                return HTMLResponse(content="""
+                return HTMLResponse(
+                    content="""
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -63,11 +64,15 @@ def create_app(settings: Settings, azure_cli_service: AzureCliService) -> FastAP
                     </div>
                 </body>
                 </html>
-                """, status_code=200)
+                """,
+                    status_code=200,
+                )
         except Exception as e:
             logger.error(f"Error serving root page: {e}")
-            return HTMLResponse(content=f"<h1>Error</h1><p>{str(e)}</p>", status_code=500)
-    
+            return HTMLResponse(
+                content=f"<h1>Error</h1><p>{str(e)}</p>", status_code=500
+            )
+
     @app.get("/health")
     async def health_check() -> Dict[str, Any]:
         """Health check endpoint."""
@@ -75,11 +80,11 @@ def create_app(settings: Settings, azure_cli_service: AzureCliService) -> FastAP
             # Test Azure CLI service
             result = await azure_cli_service.execute_azure_cli("az --version")
             azure_cli_available = True
-            azure_cli_version = result.split('\n')[1] if '\n' in result else result[:50]
+            azure_cli_version = result.split("\n")[1] if "\n" in result else result[:50]
         except Exception as e:
             azure_cli_available = False
             azure_cli_version = f"Error: {str(e)}"
-        
+
         return {
             "status": "healthy",
             "service": "Azure CLI MCP Server",
@@ -87,9 +92,9 @@ def create_app(settings: Settings, azure_cli_service: AzureCliService) -> FastAP
             "azure_cli_available": azure_cli_available,
             "azure_cli_version": azure_cli_version,
             "log_level": settings.log_level,
-            "log_file": settings.log_file
+            "log_file": settings.log_file,
         }
-    
+
     @app.get("/api/info")
     async def get_info() -> Dict[str, Any]:
         """Get server information."""
@@ -101,19 +106,23 @@ def create_app(settings: Settings, azure_cli_service: AzureCliService) -> FastAP
             "endpoints": [
                 {"path": "/", "method": "GET", "description": "Main page"},
                 {"path": "/health", "method": "GET", "description": "Health check"},
-                {"path": "/api/info", "method": "GET", "description": "Server information"}
-            ]
+                {
+                    "path": "/api/info",
+                    "method": "GET",
+                    "description": "Server information",
+                },
+            ],
         }
-    
+
     return app
 
 
 # For development/testing
 if __name__ == "__main__":
     import uvicorn
-    
+
     settings = Settings()
     azure_cli_service = AzureCliService(settings)
     app = create_app(settings, azure_cli_service)
-    
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
