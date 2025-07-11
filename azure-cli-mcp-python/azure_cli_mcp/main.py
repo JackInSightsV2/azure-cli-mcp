@@ -8,8 +8,6 @@ from typing import Any, Dict, List, Optional, Union
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import (
-    CallToolRequest,
-    CallToolResult,
     TextContent,
     Tool,
 )
@@ -53,60 +51,9 @@ def create_azure_cli_tool() -> Tool:
     )
 
 
-async def handle_azure_cli_tool(request: CallToolRequest) -> CallToolResult:
-    """Handle Azure CLI command execution tool calls."""
-    if not azure_cli_service:
-        return CallToolResult(
-            content=[
-                TextContent(
-                    type="text", text="Error: Azure CLI service not initialized"
-                )
-            ],
-            isError=True,
-        )
 
-    try:
-        # Extract command from arguments
-        if not request.params or not request.params.arguments:
-            return CallToolResult(
-                content=[
-                    TextContent(type="text", text="Error: Missing command argument")
-                ],
-                isError=True,
-            )
 
-        arguments = request.params.arguments
-        if not isinstance(arguments, dict) or "command" not in arguments:
-            return CallToolResult(
-                content=[
-                    TextContent(
-                        type="text", text="Error: Missing 'command' in arguments"
-                    )
-                ],
-                isError=True,
-            )
 
-        command = arguments["command"]
-        if not isinstance(command, str):
-            return CallToolResult(
-                content=[
-                    TextContent(type="text", text="Error: Command must be a string")
-                ],
-                isError=True,
-            )
-
-        logger.info(f"Executing Azure CLI command via MCP: {command}")
-
-        # Execute the Azure CLI command
-        result = await azure_cli_service.execute_azure_cli(command)
-
-        return CallToolResult(content=[TextContent(type="text", text=result)])
-
-    except Exception as e:
-        logger.error(f"Error executing Azure CLI command: {e}")
-        return CallToolResult(
-            content=[TextContent(type="text", text=f"Error: {str(e)}")], isError=True
-        )
 
 
 async def main() -> None:
@@ -132,23 +79,33 @@ async def main() -> None:
         @server.call_tool()  # type: ignore
         async def handle_call_tool(
             name: str, arguments: Dict[str, Any]
-        ) -> CallToolResult:
+        ) -> list[TextContent]:
             """Handle tool execution requests."""
             if name == "execute_azure_cli_command":
-                # Create a fake request object for compatibility
-                class FakeRequest:
-                    def __init__(self, name: str, arguments: Dict[str, Any]):
-                        self.params = self
-                        self.name = name
-                        self.arguments = arguments
+                try:
+                    # Check if service is initialized
+                    if not azure_cli_service:
+                        return [TextContent(type="text", text="Error: Azure CLI service not initialized")]
 
-                fake_request = FakeRequest(name, arguments)
-                return await handle_azure_cli_tool(fake_request)  # type: ignore
+                    # Validate arguments
+                    if not arguments or "command" not in arguments:
+                        return [TextContent(type="text", text="Error: Missing command argument")]
+
+                    command = arguments["command"]
+                    if not isinstance(command, str):
+                        return [TextContent(type="text", text="Error: Command must be a string")]
+
+                    logger.info(f"Executing Azure CLI command via MCP: {command}")
+
+                    # Execute the Azure CLI command
+                    result = await azure_cli_service.execute_azure_cli(command)
+                    return [TextContent(type="text", text=result)]
+
+                except Exception as e:
+                    logger.error(f"Error executing Azure CLI command: {e}")
+                    return [TextContent(type="text", text=f"Error: {str(e)}")]
             else:
-                return CallToolResult(
-                    content=[TextContent(type="text", text=f"Unknown tool: {name}")],
-                    isError=True,
-                )
+                return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
         logger.info("Starting Azure CLI MCP Server...")
         logger.info(f"Available tools: {azure_cli_tool.name}")
