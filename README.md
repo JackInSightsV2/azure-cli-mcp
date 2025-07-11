@@ -1,6 +1,6 @@
 # Azure CLI MCP Server
 
-An MCP (Model Context Protocol) server that provides AI assistants with secure access to Azure CLI commands.
+An MCP (Model Context Protocol) server that provides AI assistants with secure access to Azure CLI commands. All you need is docker to run it locally. There are no cloud options at the moment. When you first run it allow it a little longer to download the docker image from github container registry. 
 
 ## Quick Setup
 
