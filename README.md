@@ -46,20 +46,21 @@ Add to your `~/.cursor/mcp.json`:
 }
 ```
 
-### Other MCP Clients
+### Other MCP Clients (Like Warp AI)
 
 ```json
 {
-  "servers": {
-    "azure-cli": {
-      "command": "docker",
-      "args": [
-        "run",
-        "-i",
-        "--rm",
-        "ghcr.io/jackinsightsv2/azure-cli-mcp:latest"
-      ]
-    }
+  "azure-cli": {
+    "command": "docker",
+    "args": [
+      "run",
+      "-i",
+      "--rm",
+      "ghcr.io/jackinsightsv2/azure-cli-mcp:latest"
+    ],
+    "env": {},
+    "working_directory": null,
+    "start_on_launch": true
   }
 }
 ```
