@@ -50,8 +50,7 @@ ENV LOG_FILE=/tmp/azure_cli_mcp.log
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import azure_cli_mcp; print('OK')" || exit 1
 
-# Expose port (though MCP uses stdio, this is for future HTTP transport)
-EXPOSE 8080
+# MCP server uses stdio transport, no port needed
 
 # Run the MCP server
 CMD ["python", "-m", "azure_cli_mcp.main"] 

@@ -23,8 +23,7 @@ class TestSettings:
         assert settings.azure_subscription_id is None
         assert settings.command_timeout == 300
         assert settings.max_concurrent_commands == 5
-        assert settings.web_host == "127.0.0.1"
-        assert settings.web_port == 8000
+
 
     def test_settings_from_env_vars(self):
         """Test loading settings from environment variables."""
@@ -36,9 +35,7 @@ class TestSettings:
             "AZURE_CLIENT_SECRET": "test-secret",
             "AZURE_SUBSCRIPTION_ID": "test-sub",
             "COMMAND_TIMEOUT": "600",
-            "MAX_CONCURRENT_COMMANDS": "10",
-            "WEB_HOST": "0.0.0.0",
-            "WEB_PORT": "9000"
+            "MAX_CONCURRENT_COMMANDS": "10"
         }
         
         with patch.dict(os.environ, env_vars):
@@ -52,8 +49,6 @@ class TestSettings:
             assert settings.azure_subscription_id == "test-sub"
             assert settings.command_timeout == 600
             assert settings.max_concurrent_commands == 10
-            assert settings.web_host == "0.0.0.0"
-            assert settings.web_port == 9000
 
     def test_azure_credentials_property(self):
         """Test azure_credentials property."""
@@ -108,11 +103,7 @@ class TestSettings:
             # Should convert invalid log level to default INFO
             assert settings.log_level == "INFO"  # Our validator converts invalid values to INFO
 
-    def test_invalid_port(self):
-        """Test validation of port number."""
-        with patch.dict(os.environ, {"WEB_PORT": "invalid"}):
-            with pytest.raises(ValidationError):
-                Settings()
+
 
     def test_invalid_timeout(self):
         """Test validation of timeout value."""
@@ -128,25 +119,13 @@ class TestSettings:
 
     def test_negative_values(self):
         """Test handling of negative values."""
-        with patch.dict(os.environ, {"WEB_PORT": "-1"}):
-            with pytest.raises(ValidationError):
-                Settings()
-        
         with patch.dict(os.environ, {"COMMAND_TIMEOUT": "-1"}):
             with pytest.raises(ValidationError):
                 Settings()
 
-    def test_zero_values(self):
-        """Test handling of zero values."""
-        with patch.dict(os.environ, {"WEB_PORT": "0"}):
-            with pytest.raises(ValidationError):
-                Settings()
 
-    def test_large_values(self):
-        """Test handling of large values."""
-        with patch.dict(os.environ, {"WEB_PORT": "99999"}):
-            with pytest.raises(ValidationError):
-                Settings()
+
+
 
     def test_settings_immutability(self):
         """Test that settings are immutable after creation."""

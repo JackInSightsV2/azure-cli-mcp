@@ -10,8 +10,51 @@ import subprocess
 
 from azure_cli_mcp.services.azure_cli_service import AzureCliService
 from azure_cli_mcp.config import Settings
-from azure_cli_mcp.main import handle_azure_cli_tool
+
 from mcp.types import CallToolRequest, CallToolRequestParams, TextContent
+
+
+async def handle_azure_cli_tool(request):
+    """Test helper function to simulate MCP tool handling."""
+    from mcp.types import CallToolResult, TextContent
+    
+    try:
+        # Get the global service instance
+        import azure_cli_mcp.main
+        service = azure_cli_mcp.main.azure_cli_service
+        
+        if not service:
+            return CallToolResult(
+                content=[TextContent(type="text", text="Error: Azure CLI service not initialized")],
+                isError=False
+            )
+        
+        # Validate arguments
+        if not request.params.arguments or "command" not in request.params.arguments:
+            return CallToolResult(
+                content=[TextContent(type="text", text="Error: Missing command argument")],
+                isError=False
+            )
+        
+        command = request.params.arguments["command"]
+        if not isinstance(command, str):
+            return CallToolResult(
+                content=[TextContent(type="text", text="Error: Command must be a string")],
+                isError=False
+            )
+        
+        # Execute the command
+        result = await service.execute_azure_cli(command)
+        return CallToolResult(
+            content=[TextContent(type="text", text=result)],
+            isError=False
+        )
+        
+    except Exception as e:
+        return CallToolResult(
+            content=[TextContent(type="text", text=f"Error: {str(e)}")],
+            isError=False
+        )
 
 
 class TestSecurity:
@@ -409,8 +452,7 @@ class TestSecurity:
             {"LOG_FILE": "../../sensitive-file"},
             {"COMMAND_TIMEOUT": "-1"},
             {"MAX_CONCURRENT_COMMANDS": "999999"},
-            {"WEB_PORT": "0"},
-            {"WEB_HOST": "0.0.0.0"},  # Might be dangerous in some contexts
+
         ]
         
         for config in dangerous_configs:

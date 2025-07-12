@@ -50,12 +50,6 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     log_file: str = Field(default="azure_cli_mcp.log", alias="LOG_FILE")
 
-    # Web settings
-    web_host: str = Field(default="127.0.0.1", alias="WEB_HOST")
-    web_port: int = Field(
-        default=8000, ge=1024, le=65535, alias="WEB_PORT"
-    )  # Valid port range
-
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, v: str) -> str:
